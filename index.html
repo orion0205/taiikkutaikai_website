@@ -82,12 +82,30 @@
 
     <!-- クラス対抗 得点順位 -->
     <section>
-      <div class="flex items-center justify-between border-b-2 border-slate-200 pb-2 mb-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-slate-200 pb-2 mb-4 gap-2">
         <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
           <span>🏆</span> クラス対抗 得点順位
         </h2>
         <span class="text-xs text-slate-500">高い順</span>
       </div>
+
+      <!-- 学年切り替えタブ -->
+      <div class="flex bg-slate-200 p-1 rounded-xl mb-4 text-xs sm:text-sm font-bold">
+        <button id="tab-all" onclick="setGradeTab('all')" class="flex-1 py-2 rounded-lg transition-all shadow-sm bg-white text-indigo-950">
+          総合
+        </button>
+        <button id="tab-4" onclick="setGradeTab('4')" class="flex-1 py-2 rounded-lg transition-all text-slate-600 hover:text-slate-900">
+          高1 (4年)
+        </button>
+        <button id="tab-5" onclick="setGradeTab('5')" class="flex-1 py-2 rounded-lg transition-all text-slate-600 hover:text-slate-900">
+          高2 (5年)
+        </button>
+        <button id="tab-6" onclick="setGradeTab('6')" class="flex-1 py-2 rounded-lg transition-all text-slate-600 hover:text-slate-900">
+          高3 (6年)
+        </button>
+      </div>
+
+      <!-- 順位カード一覧表示エリア -->
       <div id="ranking-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         <div class="col-span-full text-center py-8 text-slate-400">データを読み込んでいます...</div>
       </div>
@@ -112,13 +130,11 @@
   </footer>
 
   <script>
-    // ★ 設定方法：
-    // GoogleスプレッドシートのURL例: https://docs.google.com/spreadsheets/d/1ABC123xyz.../edit#gid=0
-    // の場合、1ABC123xyz... の文字列を SPREADSHEET_ID に入力してください。
-    // （またはこれまで通りの pub?output=csv URL を CSV_URL に入れても動きます）
-    
-    const SPREADSHEET_ID = "1W-sIjS8sE719uHCgWl5ycFHCSzL18frQJ0QuBTmcHMg"; // ここにスプレッドシートIDを入力（推奨）
-    const CSV_URL_BACKUP = ""; // ID入力が分からない場合は従来のCSV公開URLをここに入力
+    const SPREADSHEET_ID = "1W-sIjS8sE719uHCgWl5ycFHCSzL18frQJ0QuBTmcHMg"; // ここにスプレッドシートIDを入力
+    const CSV_URL_BACKUP = ""; // バックアップ用URL
+
+    let globalScoresData = []; // スコア保持用のグローバル配列
+    let activeGradeTab = 'all'; // 現在選択中のタブ ('all', '4', '5', '6')
 
     function getFetchUrl() {
       if (SPREADSHEET_ID && SPREADSHEET_ID.trim() !== "") {
@@ -127,7 +143,7 @@
       return CSV_URL_BACKUP.trim();
     }
 
-    // CSVパース（カンマや改行の処理）
+    // CSVパース
     function parseCSV(text) {
       const lines = text.trim().split(/\r?\n/);
       return lines.map(line => {
@@ -147,6 +163,75 @@
         }
         result.push(cell.trim().replace(/^"|"$/g, ''));
         return result;
+      });
+    }
+
+    // タブ切り替え処理
+    function setGradeTab(grade) {
+      activeGradeTab = grade;
+
+      // タブのボタン見た目更新
+      ['all', '4', '5', '6'].forEach(g => {
+        const btn = document.getElementById(`tab-${g}`);
+        if (g === grade) {
+          btn.className = "flex-1 py-2 rounded-lg transition-all shadow bg-white text-indigo-950 font-extrabold";
+        } else {
+          btn.className = "flex-1 py-2 rounded-lg transition-all text-slate-600 hover:text-slate-900 font-bold";
+        }
+      });
+
+      // 順位表示を再描画
+      renderRanking();
+    }
+
+    // 順位カード表示描画
+    function renderRanking() {
+      const rankingContainer = document.getElementById('ranking-container');
+      rankingContainer.innerHTML = '';
+
+      // 選択中の学年でフィルタリング
+      let filteredScores = globalScoresData;
+      if (activeGradeTab !== 'all') {
+        filteredScores = globalScoresData.filter(item => {
+          // 例: "41R" の先頭1文字が "4" かどうか判定
+          return item.name.startsWith(activeGradeTab);
+        });
+      }
+
+      if (filteredScores.length === 0) {
+        rankingContainer.innerHTML = '<div class="col-span-full text-center py-6 text-slate-400">該当するクラスのデータがありません</div>';
+        return;
+      }
+
+      filteredScores.forEach((item, index) => {
+        const card = document.createElement('div');
+        let rankBadge = `第 ${index + 1} 位`;
+        let borderStyle = 'border-slate-200 bg-white';
+        let badgeBg = 'bg-slate-100 text-slate-600';
+
+        if (index === 0) {
+          borderStyle = 'border-amber-400 bg-amber-50/50 shadow-md ring-2 ring-amber-300';
+          badgeBg = 'bg-amber-400 text-white font-extrabold';
+          rankBadge = '🥇 第 1 位';
+        } else if (index === 1) {
+          borderStyle = 'border-slate-300 bg-slate-50 shadow-sm';
+          badgeBg = 'bg-slate-300 text-slate-800 font-bold';
+          rankBadge = '🥈 第 2 位';
+        } else if (index === 2) {
+          borderStyle = 'border-amber-700/30 bg-orange-50/30 shadow-sm';
+          badgeBg = 'bg-amber-700/80 text-white font-bold';
+          rankBadge = '🥉 第 3 位';
+        }
+
+        card.className = `border rounded-xl p-3 text-center transition ${borderStyle}`;
+        card.innerHTML = `
+          <div class="inline-block text-[10px] px-2 py-0.5 rounded-full ${badgeBg} mb-1">
+            ${rankBadge}
+          </div>
+          <div class="text-xl font-black text-slate-800">${item.name}</div>
+          <div class="text-lg font-bold text-indigo-900">${item.score} <span class="text-xs font-normal">pt</span></div>
+        `;
+        rankingContainer.appendChild(card);
       });
     }
 
@@ -176,7 +261,6 @@
       }
 
       try {
-        // ★ キャッシュ破棄用のパラメータとfetchオプションを適用
         const cacheBuster = '_nc=' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
         const urlWithParam = targetUrl.includes('?') ? `${targetUrl}&${cacheBuster}` : `${targetUrl}?${cacheBuster}`;
 
@@ -211,7 +295,7 @@
           eventCard.classList.add('bg-grade-default');
         }
 
-        // 2. 得点順位 (A列, B列, C列)
+        // 2. 得点順位 (A列, B列, C列) の配列作成
         const scores = [];
         dataRows.forEach(row => {
           const id = row[0];
@@ -226,38 +310,9 @@
         // スコア降順ソート
         scores.sort((a, b) => b.score - a.score);
 
-        const rankingContainer = document.getElementById('ranking-container');
-        rankingContainer.innerHTML = '';
-        scores.forEach((item, index) => {
-          const card = document.createElement('div');
-          let rankBadge = `第 ${index + 1} 位`;
-          let borderStyle = 'border-slate-200 bg-white';
-          let badgeBg = 'bg-slate-100 text-slate-600';
-
-          if (index === 0) {
-            borderStyle = 'border-amber-400 bg-amber-50/50 shadow-md ring-2 ring-amber-300';
-            badgeBg = 'bg-amber-400 text-white font-extrabold';
-            rankBadge = '🥇 第 1 位';
-          } else if (index === 1) {
-            borderStyle = 'border-slate-300 bg-slate-50 shadow-sm';
-            badgeBg = 'bg-slate-300 text-slate-800 font-bold';
-            rankBadge = '🥈 第 2 位';
-          } else if (index === 2) {
-            borderStyle = 'border-amber-700/30 bg-orange-50/30 shadow-sm';
-            badgeBg = 'bg-amber-700/80 text-white font-bold';
-            rankBadge = '🥉 第 3 位';
-          }
-
-          card.className = `border rounded-xl p-3 text-center transition ${borderStyle}`;
-          card.innerHTML = `
-            <div class="inline-block text-[10px] px-2 py-0.5 rounded-full ${badgeBg} mb-1">
-              ${rankBadge}
-            </div>
-            <div class="text-xl font-black text-slate-800">${item.name}</div>
-            <div class="text-lg font-bold text-indigo-900">${item.score} <span class="text-xs font-normal">pt</span></div>
-          `;
-          rankingContainer.appendChild(card);
-        });
+        // グローバル変数に保持して再描画
+        globalScoresData = scores;
+        renderRanking();
 
         // 3. 競技プログラム (F列, G列)
         const programContainer = document.getElementById('program-container');
