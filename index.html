@@ -4,249 +4,177 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>攻玉社高等学校 体育大会速報</title>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    :root {
-      --primary-color: #003366;
-      --bg-color: #f4f6f8;
-      --card-bg: #ffffff;
-      --text-color: #333333;
-      --active-color: #e63946;
-
-      /* 学年カラーのデフォルト設定 */
-      --grade-default-bg: linear-gradient(135deg, #003366, #1d3557);
-      --grade4-bg: linear-gradient(135deg, #f39c12, #f1c40f); /* 4年: 黄色系 */
-      --grade5-bg: linear-gradient(135deg, #27ae60, #2ecc71); /* 5年: 緑色系 */
-      --grade6-bg: linear-gradient(135deg, #e74c3c, #e67e22); /* 6年: 赤色系 */
-    }
-
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+    
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      margin: 0;
-      padding: 0;
-      line-height: 1.5;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f8fafc;
     }
 
-    header {
-      background-color: var(--primary-color);
-      color: white;
-      text-align: center;
-      padding: 1.5rem;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    /* 点滅アニメーション */
+    @keyframes pulse-ring {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.05); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    
+    .animate-live {
+      animation: pulse-ring 1.8s infinite ease-in-out;
     }
 
-    header h1 {
-      margin: 0;
-      font-size: 1.8rem;
-    }
-
-    .container {
-      max-width: 800px;
-      margin: 20px auto;
-      padding: 0 15px;
-    }
-
-    /* 現在の種目バナー */
-    .current-event-card {
-      background: var(--grade-default-bg);
-      color: white;
-      padding: 22px;
-      border-radius: 14px;
-      text-align: center;
-      margin-bottom: 25px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-      transition: background 0.5s ease;
-    }
-
-    /* 学年別の背景スタイル */
-    .current-event-card.grade-4 {
-      background: var(--grade4-bg);
-      color: #2c3e50; /* 黄色は文字をダークカラーにして見やすく */
-    }
-
-    .current-event-card.grade-5 {
-      background: var(--grade5-bg);
+    /* 学年別グラデーション設定 */
+    .bg-grade-default {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
       color: #ffffff;
     }
-
-    .current-event-card.grade-6 {
-      background: var(--grade6-bg);
+    .bg-grade-4 {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
       color: #ffffff;
     }
-
-    .current-event-card h2 {
-      margin: 0 0 8px 0;
-      font-size: 1.1rem;
-      opacity: 0.9;
+    .bg-grade-5 {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
     }
-
-    .current-event-card .event-title {
-      font-size: 2rem;
-      font-weight: bold;
-      margin: 0;
-    }
-
-    .section-title {
-      border-bottom: 2px solid var(--primary-color);
-      padding-bottom: 5px;
-      margin-top: 30px;
-      color: var(--primary-color);
-    }
-
-    /* スコアランキング */
-    .ranking-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-      gap: 12px;
-      margin-bottom: 30px;
-    }
-
-    .rank-card {
-      background-color: var(--card-bg);
-      border-radius: 8px;
-      padding: 15px;
-      text-align: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-
-    .rank-card.top1 { border: 2px solid #ffd700; background-color: #fffdf0; }
-    .rank-card.top2 { border: 2px solid #c0c0c0; }
-    .rank-card.top3 { border: 2px solid #cd7f32; }
-
-    .rank-badge {
-      font-size: 0.8rem;
-      font-weight: bold;
-      color: #666;
-    }
-
-    .class-name {
-      font-size: 1.4rem;
-      font-weight: bold;
-      margin: 5px 0;
-    }
-
-    .score {
-      font-size: 1.2rem;
-      color: var(--primary-color);
-      font-weight: bold;
-    }
-
-    /* プログラム一覧 */
-    .program-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .program-item {
-      background-color: var(--card-bg);
-      padding: 12px 18px;
-      border-radius: 6px;
-      margin-bottom: 8px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    }
-
-    .program-item.completed {
-      background-color: #e9ecef;
-      color: #888888;
-      text-decoration: line-through;
-    }
-
-    .program-item.in-progress {
-      border-left: 5px solid var(--active-color);
-      background-color: #fff5f5;
-      font-weight: bold;
-    }
-
-    .status-badge {
-      font-size: 0.85rem;
-      padding: 4px 8px;
-      border-radius: 4px;
-      text-decoration: none !important;
-      display: inline-block;
-    }
-
-    .status-badge.completed {
-      background-color: #ced4da;
-      color: #495057;
-    }
-
-    .status-badge.in-progress {
-      background-color: var(--active-color);
-      color: white;
-      animation: pulse 1.5s infinite;
-    }
-
-    @keyframes pulse {
-      0% { opacity: 1; }
-      50% { opacity: 0.6; }
-      100% { opacity: 1; }
+    .bg-grade-6 {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: #ffffff;
     }
   </style>
 </head>
-<body>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
 
-  <header>
-    <h1>攻玉社高等学校 体育大会</h1>
+  <!-- ヘッダー -->
+  <header class="bg-indigo-950 text-white shadow-md sticky top-0 z-50">
+    <div class="max-w-3xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div class="flex items-center space-x-2">
+        <span class="text-2xl">🏃</span>
+        <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight">攻玉社高等学校 体育大会</h1>
+      </div>
+      <!-- 手動更新ボタンと時刻表示 -->
+      <div class="flex items-center space-x-3 text-xs sm:text-sm">
+        <span id="last-updated-text" class="text-indigo-200">最終更新: --:--:--</span>
+        <button id="refresh-btn" onclick="fetchData(true)" class="flex items-center space-x-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-1.5 px-3 rounded-lg shadow transition duration-150 active:scale-95 disabled:opacity-50">
+          <svg id="refresh-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          <span>今すぐ更新</span>
+        </button>
+      </div>
+    </div>
   </header>
 
-  <div class="container">
-    <!-- 現在の種目表示エリア -->
-    <div id="current-event-card" class="current-event-card">
-      <h2>📣 現在行われている種目</h2>
-      <div id="current-event-display" class="event-title">読み込み中...</div>
-    </div>
+  <!-- メインコンテンツ -->
+  <main class="max-w-3xl mx-auto px-4 py-6 w-full flex-grow space-y-8">
 
-    <!-- 得点順位 -->
-    <h2 class="section-title">🏆 クラス対抗 得点順位</h2>
-    <div id="ranking-container" class="ranking-grid">
-      <div>データを読み込んでいます...</div>
-    </div>
+    <!-- 現在行われている種目 (最上部・大型カード) -->
+    <section>
+      <div id="current-event-card" class="bg-grade-default rounded-2xl p-6 shadow-xl text-center transition-all duration-500 transform">
+        <div class="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase mb-3">
+          <span class="w-2 h-2 rounded-full bg-red-400 animate-ping"></span>
+          <span>現在行われている種目</span>
+        </div>
+        <div id="current-event-display" class="text-3xl sm:text-4xl font-black tracking-wide my-1">
+          読み込み中...
+        </div>
+      </div>
+    </section>
 
-    <!-- タイムスケジュール／プログラム -->
-    <h2 class="section-title">📋 競技プログラム</h2>
-    <ul id="program-container" class="program-list">
-      <li>データを読み込んでいます...</li>
-    </ul>
-  </div>
+    <!-- クラス対抗 得点順位 -->
+    <section>
+      <div class="flex items-center justify-between border-b-2 border-slate-200 pb-2 mb-4">
+        <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <span>🏆</span> クラス対抗 得点順位
+        </h2>
+        <span class="text-xs text-slate-500">高い順</span>
+      </div>
+      <div id="ranking-container" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+        <div class="col-span-full text-center py-8 text-slate-400">データを読み込んでいます...</div>
+      </div>
+    </section>
+
+    <!-- 競技プログラム -->
+    <section>
+      <div class="border-b-2 border-slate-200 pb-2 mb-4">
+        <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <span>📋</span> 競技プログラム
+        </h2>
+      </div>
+      <ul id="program-container" class="space-y-2">
+        <li class="text-center py-8 text-slate-400">データを読み込んでいます...</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <footer class="bg-slate-900 text-slate-400 text-center py-4 text-xs">
+    &copy; 攻玉社高等学校 体育大会 運営
+  </footer>
 
   <script>
-    // ★以下にGoogleスプレッドシートから取得したCSVのURLを貼り付けてください
+    // ★GoogleスプレッドシートのCSV公開URLをセット
+    // ※ 取得した「https://docs.google.com/spreadsheets/d/e/.../pub?output=csv」のURLに置き換えてください
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTE9OkhHMCgLOKfviT6BHDY3D_rp5_2Jw3adsF7J9PAeWo55M7jRtbx7raBYnb6L4icI7e8WCogzyWM/pub?gid=0&single=true&output=csv";
 
+    // CSVパース処理
     function parseCSV(text) {
       const lines = text.trim().split('\n');
       return lines.map(line => line.split(',').map(cell => cell.trim().replace(/^"|"$/g, '')));
     }
 
-    async function fetchData() {
+    // データ取得＆UI更新関数
+    async function fetchData(isManual = false) {
+      const refreshBtn = document.getElementById('refresh-btn');
+      const refreshIcon = document.getElementById('refresh-icon');
+
+      // 手動更新時のローディング状態
+      if (isManual) {
+        refreshBtn.disabled = true;
+        refreshIcon.classList.add('animate-spin');
+      }
+
+      // CSV_URL未設定時のガード
+      if (!CSV_URL || CSV_URL === "YOUR_CSV_URL_HERE") {
+        document.getElementById('current-event-display').textContent = 'URL未設定';
+        document.getElementById('ranking-container').innerHTML = '<div class="col-span-full text-center py-8 text-amber-600 bg-amber-50 rounded-xl font-medium">index.html 内の CSV_URL をGoogleスプレッドシートの公開URLに置き換えてください。</div>';
+        document.getElementById('program-container').innerHTML = '<li class="text-center py-8 text-amber-600 bg-amber-50 rounded-xl font-medium">index.html 内の CSV_URL をGoogleスプレッドシートの公開URLに置き換えてください。</li>';
+        if (isManual) {
+          setTimeout(() => {
+            refreshBtn.disabled = false;
+            refreshIcon.classList.remove('animate-spin');
+          }, 300);
+        }
+        return;
+      }
+
       try {
-        const response = await fetch(CSV_URL + '&t=' + new Date().getTime());
+        // キャッシュ回避用にクエリパラメータを付与 (? または & の自動判定)
+        const separator = CSV_URL.includes('?') ? '&' : '?';
+        const response = await fetch(CSV_URL + separator + 't=' + new Date().getTime());
         const dataText = await response.text();
         const rows = parseCSV(dataText);
 
         const dataRows = rows.slice(1);
 
-        // 1. 現在行われている種目の取得と判定
+        // 1. 現在行われている種目 (E2セル)
         const currentEvent = dataRows[0] && dataRows[0][4] ? dataRows[0][4] : '---';
         const eventCard = document.getElementById('current-event-card');
         document.getElementById('current-event-display').textContent = currentEvent;
 
-        // 学年判定とクラス追加
-        eventCard.className = 'current-event-card'; // 初期化
+        // 学年判定とカラー適用
+        eventCard.className = 'rounded-2xl p-6 shadow-xl text-center transition-all duration-500 transform ';
         if (currentEvent.includes('4年')) {
-          eventCard.classList.add('grade-4');
+          eventCard.classList.add('bg-grade-4');
         } else if (currentEvent.includes('5年')) {
-          eventCard.classList.add('grade-5');
+          eventCard.classList.add('bg-grade-5');
         } else if (currentEvent.includes('6年')) {
-          eventCard.classList.add('grade-6');
+          eventCard.classList.add('bg-grade-6');
+        } else {
+          eventCard.classList.add('bg-grade-default');
         }
 
-        // 2. 得点順位の読み込み
+        // 2. 得点順位 (A列, B列, C列)
         const scores = [];
         dataRows.forEach(row => {
           const id = row[0];
@@ -258,27 +186,43 @@
           }
         });
 
+        // スコア降順ソート
         scores.sort((a, b) => b.score - a.score);
 
         const rankingContainer = document.getElementById('ranking-container');
         rankingContainer.innerHTML = '';
         scores.forEach((item, index) => {
           const card = document.createElement('div');
-          let rankClass = '';
-          if (index === 0) rankClass = 'top1';
-          else if (index === 1) rankClass = 'top2';
-          else if (index === 2) rankClass = 'top3';
+          let rankBadge = `第 ${index + 1} 位`;
+          let borderStyle = 'border-slate-200 bg-white';
+          let badgeBg = 'bg-slate-100 text-slate-600';
 
-          card.className = `rank-card ${rankClass}`;
+          if (index === 0) {
+            borderStyle = 'border-amber-400 bg-amber-50/50 shadow-md ring-2 ring-amber-300';
+            badgeBg = 'bg-amber-400 text-white font-extrabold';
+            rankBadge = '🥇 第 1 位';
+          } else if (index === 1) {
+            borderStyle = 'border-slate-300 bg-slate-50 shadow-sm';
+            badgeBg = 'bg-slate-300 text-slate-800 font-bold';
+            rankBadge = '🥈 第 2 位';
+          } else if (index === 2) {
+            borderStyle = 'border-amber-700/30 bg-orange-50/30 shadow-sm';
+            badgeBg = 'bg-amber-700/80 text-white font-bold';
+            rankBadge = '🥉 第 3 位';
+          }
+
+          card.className = `border rounded-xl p-3 text-center transition ${borderStyle}`;
           card.innerHTML = `
-            <div class="rank-badge">第 ${index + 1} 位</div>
-            <div class="class-name">${item.name}</div>
-            <div class="score">${item.score} pt</div>
+            <div class="inline-block text-[10px] px-2 py-0.5 rounded-full ${badgeBg} mb-1">
+              ${rankBadge}
+            </div>
+            <div class="text-xl font-black text-slate-800">${item.name}</div>
+            <div class="text-lg font-bold text-indigo-900">${item.score} <span class="text-xs font-normal">pt</span></div>
           `;
           rankingContainer.appendChild(card);
         });
 
-        // 3. プログラム一覧の読み込み
+        // 3. 競技プログラム (F列, G列)
         const programContainer = document.getElementById('program-container');
         programContainer.innerHTML = '';
 
@@ -288,33 +232,56 @@
 
           if (programName) {
             const li = document.createElement('li');
-            let itemClass = 'program-item';
-            let badgeHtml = '';
-
+            
             if (status === '終了') {
-              itemClass += ' completed';
-              badgeHtml = `<span class="status-badge completed">終了</span>`;
+              li.className = 'flex justify-between items-center bg-slate-100 border border-slate-200 text-slate-400 px-4 py-3 rounded-xl line-through';
+              li.innerHTML = `
+                <span class="font-medium">${programName}</span>
+                <span class="no-underline inline-block bg-slate-200 text-slate-500 text-xs px-2.5 py-1 rounded-md font-bold">終了</span>
+              `;
             } else if (status === '進行中') {
-              itemClass += ' in-progress';
-              badgeHtml = `<span class="status-badge in-progress">進行中</span>`;
+              li.className = 'flex justify-between items-center bg-red-50 border-2 border-red-500 text-slate-900 px-4 py-3 rounded-xl shadow-md font-bold';
+              li.innerHTML = `
+                <span class="text-base text-red-950">${programName}</span>
+                <span class="inline-flex items-center space-x-1 bg-red-600 text-white text-xs px-2.5 py-1 rounded-md font-bold animate-live shadow">
+                  <span class="w-1.5 h-1.5 bg-white rounded-full"></span>
+                  <span>進行中</span>
+                </span>
+              `;
+            } else {
+              li.className = 'flex justify-between items-center bg-white border border-slate-200 text-slate-700 px-4 py-3 rounded-xl shadow-sm';
+              li.innerHTML = `
+                <span class="font-medium">${programName}</span>
+                <span class="text-xs text-slate-400">未開始</span>
+              `;
             }
 
-            li.className = itemClass;
-            li.innerHTML = `
-              <span>${programName}</span>
-              ${badgeHtml}
-            `;
             programContainer.appendChild(li);
           }
         });
 
+        // 最終更新時刻の表示更新
+        const now = new Date();
+        const timeString = now.toTimeString().split(' ')[0];
+        document.getElementById('last-updated-text').textContent = `最終更新: ${timeString}`;
+
       } catch (error) {
-        console.error('データの取得に失敗しました:', error);
+        console.error('データ取得失敗:', error);
+      } finally {
+        if (isManual) {
+          setTimeout(() => {
+            refreshBtn.disabled = false;
+            refreshIcon.classList.remove('animate-spin');
+          }, 500);
+        }
       }
     }
 
+    // 初回ロード
     fetchData();
-    setInterval(fetchData, 15000);
+
+    // 15秒ごとの自動更新
+    setInterval(() => fetchData(false), 15000);
   </script>
 </body>
 </html>
