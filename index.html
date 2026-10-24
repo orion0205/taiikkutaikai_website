@@ -11,6 +11,12 @@
       --card-bg: #ffffff;
       --text-color: #333333;
       --active-color: #e63946;
+
+      /* 学年カラーのデフォルト設定 */
+      --grade-default-bg: linear-gradient(135deg, #003366, #1d3557);
+      --grade4-bg: linear-gradient(135deg, #f39c12, #f1c40f); /* 4年: 黄色系 */
+      --grade5-bg: linear-gradient(135deg, #27ae60, #2ecc71); /* 5年: 緑色系 */
+      --grade6-bg: linear-gradient(135deg, #e74c3c, #e67e22); /* 6年: 赤色系 */
     }
 
     body {
@@ -43,17 +49,34 @@
 
     /* 現在の種目バナー */
     .current-event-card {
-      background: linear-gradient(135deg, #ff7e5f, #feb47b);
+      background: var(--grade-default-bg);
       color: white;
-      padding: 20px;
-      border-radius: 12px;
+      padding: 22px;
+      border-radius: 14px;
       text-align: center;
       margin-bottom: 25px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      transition: background 0.5s ease;
+    }
+
+    /* 学年別の背景スタイル */
+    .current-event-card.grade-4 {
+      background: var(--grade4-bg);
+      color: #2c3e50; /* 黄色は文字をダークカラーにして見やすく */
+    }
+
+    .current-event-card.grade-5 {
+      background: var(--grade5-bg);
+      color: #ffffff;
+    }
+
+    .current-event-card.grade-6 {
+      background: var(--grade6-bg);
+      color: #ffffff;
     }
 
     .current-event-card h2 {
-      margin: 0 0 10px 0;
+      margin: 0 0 8px 0;
       font-size: 1.1rem;
       opacity: 0.9;
     }
@@ -74,7 +97,7 @@
     /* スコアランキング */
     .ranking-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
       gap: 12px;
       margin-bottom: 30px;
     }
@@ -85,7 +108,6 @@
       padding: 15px;
       text-align: center;
       box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-      position: relative;
     }
 
     .rank-card.top1 { border: 2px solid #ffd700; background-color: #fffdf0; }
@@ -128,7 +150,6 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
 
-    /* ステータス別のスタイル */
     .program-item.completed {
       background-color: #e9ecef;
       color: #888888;
@@ -175,7 +196,7 @@
 
   <div class="container">
     <!-- 現在の種目表示エリア -->
-    <div class="current-event-card">
+    <div id="current-event-card" class="current-event-card">
       <h2>📣 現在行われている種目</h2>
       <div id="current-event-display" class="event-title">読み込み中...</div>
     </div>
@@ -197,7 +218,6 @@
     // ★以下にGoogleスプレッドシートから取得したCSVのURLを貼り付けてください
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTE9OkhHMCgLOKfviT6BHDY3D_rp5_2Jw3adsF7J9PAeWo55M7jRtbx7raBYnb6L4icI7e8WCogzyWM/pub?gid=0&single=true&output=csv";
 
-    // 簡単なCSVパース関数
     function parseCSV(text) {
       const lines = text.trim().split('\n');
       return lines.map(line => line.split(',').map(cell => cell.trim().replace(/^"|"$/g, '')));
@@ -205,19 +225,28 @@
 
     async function fetchData() {
       try {
-        // キャッシュを防ぐためにタイムスタンプを付与
         const response = await fetch(CSV_URL + '&t=' + new Date().getTime());
         const dataText = await response.text();
         const rows = parseCSV(dataText);
 
-        // ヘッダーを除外
         const dataRows = rows.slice(1);
 
-        // 1. 現在行われている種目 (E列: current_event) の取得 (E2セル)
+        // 1. 現在行われている種目の取得と判定
         const currentEvent = dataRows[0] && dataRows[0][4] ? dataRows[0][4] : '---';
+        const eventCard = document.getElementById('current-event-card');
         document.getElementById('current-event-display').textContent = currentEvent;
 
-        // 2. 得点データ (A列: id, B列: name, C列: score) の抽出と整列
+        // 学年判定とクラス追加
+        eventCard.className = 'current-event-card'; // 初期化
+        if (currentEvent.includes('4年')) {
+          eventCard.classList.add('grade-4');
+        } else if (currentEvent.includes('5年')) {
+          eventCard.classList.add('grade-5');
+        } else if (currentEvent.includes('6年')) {
+          eventCard.classList.add('grade-6');
+        }
+
+        // 2. 得点順位の読み込み
         const scores = [];
         dataRows.forEach(row => {
           const id = row[0];
@@ -229,10 +258,8 @@
           }
         });
 
-        // 得点が高い順にソート
         scores.sort((a, b) => b.score - a.score);
 
-        // スコア表示の更新
         const rankingContainer = document.getElementById('ranking-container');
         rankingContainer.innerHTML = '';
         scores.forEach((item, index) => {
@@ -251,7 +278,7 @@
           rankingContainer.appendChild(card);
         });
 
-        // 3. プログラムデータ (F列: program_no, G列: program_status) の抽出
+        // 3. プログラム一覧の読み込み
         const programContainer = document.getElementById('program-container');
         programContainer.innerHTML = '';
 
@@ -286,10 +313,7 @@
       }
     }
 
-    // 初回読み込み
     fetchData();
-
-    // 15秒ごとに自動更新（リアルタイム反映）
     setInterval(fetchData, 15000);
   </script>
 </body>
