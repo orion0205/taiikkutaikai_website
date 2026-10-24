@@ -13,7 +13,6 @@
       background-color: #f8fafc;
     }
 
-    /* 点滅アニメーション */
     @keyframes pulse-ring {
       0% { opacity: 1; transform: scale(1); }
       50% { opacity: 0.5; transform: scale(1.05); }
@@ -68,7 +67,7 @@
   <!-- メインコンテンツ -->
   <main class="max-w-3xl mx-auto px-4 py-6 w-full flex-grow space-y-8">
 
-    <!-- 現在行われている種目 (最上部・大型カード) -->
+    <!-- 現在行われている種目 -->
     <section>
       <div id="current-event-card" class="bg-grade-default rounded-2xl p-6 shadow-xl text-center transition-all duration-500 transform">
         <div class="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase mb-3">
@@ -113,14 +112,42 @@
   </footer>
 
   <script>
-    // ★GoogleスプレッドシートのCSV公開URLをセット
-    // ※ 取得した「https://docs.google.com/spreadsheets/d/e/.../pub?output=csv」のURLに置き換えてください
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTE9OkhHMCgLOKfviT6BHDY3D_rp5_2Jw3adsF7J9PAeWo55M7jRtbx7raBYnb6L4icI7e8WCogzyWM/pub?gid=0&single=true&output=csv";
+    // ★ 設定方法：
+    // GoogleスプレッドシートのURL例: https://docs.google.com/spreadsheets/d/1ABC123xyz.../edit#gid=0
+    // の場合、1ABC123xyz... の文字列を SPREADSHEET_ID に入力してください。
+    // （またはこれまで通りの pub?output=csv URL を CSV_URL に入れても動きます）
+    
+    const SPREADSHEET_ID = "1W-sIjS8sE719uHCgWl5ycFHCSzL18frQJ0QuBTmcHMg"; // ここにスプレッドシートIDを入力（推奨）
+    const CSV_URL_BACKUP = ""; // ID入力が分からない場合は従来のCSV公開URLをここに入力
 
-    // CSVパース処理
+    function getFetchUrl() {
+      if (SPREADSHEET_ID && SPREADSHEET_ID.trim() !== "") {
+        return `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID.trim()}/export?format=csv`;
+      }
+      return CSV_URL_BACKUP.trim();
+    }
+
+    // CSVパース（カンマや改行の処理）
     function parseCSV(text) {
-      const lines = text.trim().split('\n');
-      return lines.map(line => line.split(',').map(cell => cell.trim().replace(/^"|"$/g, '')));
+      const lines = text.trim().split(/\r?\n/);
+      return lines.map(line => {
+        const result = [];
+        let cell = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(cell.trim().replace(/^"|"$/g, ''));
+            cell = '';
+          } else {
+            cell += char;
+          }
+        }
+        result.push(cell.trim().replace(/^"|"$/g, ''));
+        return result;
+      });
     }
 
     // データ取得＆UI更新関数
@@ -128,17 +155,17 @@
       const refreshBtn = document.getElementById('refresh-btn');
       const refreshIcon = document.getElementById('refresh-icon');
 
-      // 手動更新時のローディング状態
       if (isManual) {
         refreshBtn.disabled = true;
         refreshIcon.classList.add('animate-spin');
       }
 
-      // CSV_URL未設定時のガード
-      if (!CSV_URL || CSV_URL === "YOUR_CSV_URL_HERE") {
-        document.getElementById('current-event-display').textContent = 'URL未設定';
-        document.getElementById('ranking-container').innerHTML = '<div class="col-span-full text-center py-8 text-amber-600 bg-amber-50 rounded-xl font-medium">index.html 内の CSV_URL をGoogleスプレッドシートの公開URLに置き換えてください。</div>';
-        document.getElementById('program-container').innerHTML = '<li class="text-center py-8 text-amber-600 bg-amber-50 rounded-xl font-medium">index.html 内の CSV_URL をGoogleスプレッドシートの公開URLに置き換えてください。</li>';
+      const targetUrl = getFetchUrl();
+
+      if (!targetUrl) {
+        document.getElementById('current-event-display').textContent = '設定未完了';
+        document.getElementById('ranking-container').innerHTML = '<div class="col-span-full text-center py-8 text-amber-600 bg-amber-50 rounded-xl font-medium">SPREADSHEET_ID または CSV_URL を指定してください。</div>';
+        document.getElementById('program-container').innerHTML = '<li class="text-center py-8 text-amber-600 bg-amber-50 rounded-xl font-medium">SPREADSHEET_ID または CSV_URL を指定してください。</li>';
         if (isManual) {
           setTimeout(() => {
             refreshBtn.disabled = false;
@@ -149,12 +176,22 @@
       }
 
       try {
-        // キャッシュ回避用にクエリパラメータを付与 (? または & の自動判定)
-        const separator = CSV_URL.includes('?') ? '&' : '?';
-        const response = await fetch(CSV_URL + separator + 't=' + new Date().getTime());
+        // ★ キャッシュ破棄用のパラメータとfetchオプションを適用
+        const cacheBuster = '_nc=' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+        const urlWithParam = targetUrl.includes('?') ? `${targetUrl}&${cacheBuster}` : `${targetUrl}?${cacheBuster}`;
+
+        const response = await fetch(urlWithParam, {
+          cache: 'no-store',
+          headers: {
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache, no-store, must-revalidate'
+          }
+        });
+
+        if (!response.ok) throw new Error('ネットワーク応答エラー');
+
         const dataText = await response.text();
         const rows = parseCSV(dataText);
-
         const dataRows = rows.slice(1);
 
         // 1. 現在行われている種目 (E2セル)
@@ -272,7 +309,7 @@
           setTimeout(() => {
             refreshBtn.disabled = false;
             refreshIcon.classList.remove('animate-spin');
-          }, 500);
+          }, 400);
         }
       }
     }
